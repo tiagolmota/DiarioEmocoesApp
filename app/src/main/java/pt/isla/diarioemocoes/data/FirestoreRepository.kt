@@ -5,66 +5,20 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.tasks.await
 
-/**
- * REPOSITÓRIO FIRESTORE — Base de Dados Externa
- * ===============================================
- * Esta classe é responsável pela comunicação com o Firebase Firestore —
- * a base de dados na nuvem que satisfaz o requisito de "base de dados externa"
- * do enunciado do trabalho.
- *
- * DECISÃO: Porquê Firebase Firestore e não PHP/MySQL?
- * ---------------------------------------------------
- * O enunciado aceita ambas as abordagens. Firestore foi escolhido porque:
- * 1. Não requer servidor próprio — o Google gere toda a infraestrutura.
- * 2. Suporte nativo a Kotlin Coroutines via extensão .await().
- * 3. Modelo NoSQL (documentos JSON) é mais flexível para dados emocionais
- *    que podem variar em estrutura no futuro.
- * 4. Adequado para protótipo académico — sem custos para volumes pequenos.
- *
- * DECISÃO: Porquê um Repositório separado?
- * -----------------------------------------
- * O padrão Repository abstrai a origem dos dados da lógica de negócio.
- * O ViewModel não sabe (nem precisa de saber) se os dados vêm do Room,
- * do Firestore ou de uma API PHP. Se amanhã mudarmos para PHP, só este
- * ficheiro muda — o ViewModel fica igual.
- *
- * DECISÃO: Estratégia Offline-First
- * ----------------------------------
- * 1. O utilizador guarda → Room persiste localmente (instantâneo, sem internet).
- * 2. Em paralelo → Firestore tenta sincronizar (requer internet).
- * 3. Se falhar → a app funciona na mesma, dado está no Room.
- * Esta estratégia garante que nunca há perda de dados por falta de ligação.
- *
- * DECISÃO: Porquê Result<T> como tipo de retorno?
- * ------------------------------------------------
- * Em vez de lançar excepções (que podem não ser apanhadas e crashar a app),
- * devolvemos Result.success() ou Result.failure(). O ViewModel decide
- * o que fazer com cada caso — separação clara de responsabilidades.
- */
+// Trata de tudo o que é comunicação com o Firestore (base de dados na nuvem).
+// Separei isto da lógica principal para que o ViewModel não saiba de onde vêm
+// os dados — se um dia mudar para PHP só altero aqui.
 class FirestoreRepository {
 
-    /**
-     * Instância do Firestore inicializada com a configuração do google-services.json.
-     * Firebase.firestore é um singleton gerido pelo Firebase SDK.
-     */
     private val db: FirebaseFirestore = Firebase.firestore
 
-    /**
-     * Referência à colecção "diario_emocoes" no Firestore.
-     * Em Firestore, uma colecção é equivalente a uma tabela SQL.
-     * Os documentos dentro da colecção são equivalentes a linhas.
-     */
+    // "diario_emocoes" no Firestore é o equivalente a uma tabela SQL.
     private val collection = db.collection("diario_emocoes")
 
-    /**
-     * SINCRONIZAR — envia um registo local para o Firestore.
-     *
-     * Passo 1: Converte o RegistoEmocao numa Map<String, Any> (formato JSON do Firestore).
-     * Passo 2: Usa o id (timestamp) como nome do documento — garante que o mesmo
-     *          registo não é duplicado se sincronizado duas vezes.
-     * Passo 3: .set() substitui o documento se já existir (comportamento upsert).
-     * Passo 4: .await() suspende a corrotina até a operação terminar — não bloqueia a UI.
-     */
+    // Envia um registo para o Firestore.
+    // Uso o mesmo id do Room como nome do documento para não criar duplicados
+    // se a sincronização correr duas vezes.
+    // .await() pausa aqui e espera pela resposta sem travar o ecrã.
     suspend fun sincronizarRegisto(registo: RegistoEmocao): Result<Unit> {
         return try {
             val documento = mapOf(
@@ -77,17 +31,13 @@ class FirestoreRepository {
             collection.document(registo.id.toString()).set(documento).await()
             Result.success(Unit)
         } catch (e: Exception) {
-            // Captura qualquer erro (sem internet, quota excedida, etc.)
+            // Se não houver internet ou outra falha, devolvo o erro
+            // sem deixar a app crashar
             Result.failure(e)
         }
     }
 
-    /**
-     * APAGAR REMOTO — remove o documento do Firestore pelo id.
-     *
-     * Chamado em paralelo com o apagar local (Room) para manter
-     * consistência entre as duas bases de dados.
-     */
+    // Remove o documento do Firestore quando o utilizador apaga um registo local.
     suspend fun apagarRegistoRemoto(id: Long): Result<Unit> {
         return try {
             collection.document(id.toString()).delete().await()
@@ -97,13 +47,8 @@ class FirestoreRepository {
         }
     }
 
-    /**
-     * LER TODOS REMOTOS — obtém todos os registos do Firestore.
-     *
-     * Caso de uso: restauro de dados após reinstalação da app,
-     * ou sincronização inicial num novo dispositivo.
-     * Ordenados por id DESC = mais recente primeiro (consistente com o Room).
-     */
+    // Busca todos os registos remotos — útil para restaurar dados
+    // após reinstalar a app num novo telemóvel.
     suspend fun obterTodosOsRegistosRemotos(): Result<List<RegistoEmocao>> {
         return try {
             val snapshot = collection
@@ -121,7 +66,7 @@ class FirestoreRepository {
                         notasTexto          = doc.getString("notasTexto") ?: ""
                     )
                 } catch (e: Exception) {
-                    null // ignora documentos com estrutura inesperada
+                    null // ignora documentos com dados em falta ou formato errado
                 }
             }
             Result.success(lista)
