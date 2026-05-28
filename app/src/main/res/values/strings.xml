@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Diario de Emocoes</string>
+    <string name="toast_saved">Registo guardado com sucesso!</string>
+    <string name="toast_deleted">Registo apagado.</string>
+    <string name="dialog_clear_title">Limpar campos</string>
+    <string name="dialog_clear_message">Deseja limpar todos os campos?</string>
+    <string name="dialog_delete_title">Apagar registo</string>
+    <string name="dialog_delete_message">Tem a certeza que deseja apagar este registo?</string>
+    <string name="dialog_yes">Sim</string>
+    <string name="dialog_no">Nao</string>
+    <string name="error_empty_state">Por favor indique o seu estado emocional.</string>
+</resources>
