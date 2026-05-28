@@ -1,0 +1,9 @@
+INSTRUCOES:
+1. Acede a https://console.firebase.google.com
+2. Cria um projeto chamado "SmartEmotionDiary"
+3. Adiciona uma app Android com package: pt.isla.diarioemocoes
+4. Faz download do google-services.json
+5. Coloca-o nesta pasta (app/) com o nome exacto: google-services.json
+6. Apaga este ficheiro .placeholder
+
+SEM O google-services.json O PROJETO NAO COMPILA.

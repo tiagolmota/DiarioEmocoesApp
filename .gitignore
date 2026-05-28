@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Firebase — nunca commitar este ficheiro (contém chaves privadas)
+google-services.json
