@@ -132,7 +132,7 @@ DiarioEmocoesApp/
 
 ---
 
-## 7. Tabela de Responsabilidades (Trabalho de Grupo)
+## 7. Tabela de Responsabilidades
 
 | Tarefa | Objetivo Tecnico | Prioridade |
 |--------|-----------------|------------|
